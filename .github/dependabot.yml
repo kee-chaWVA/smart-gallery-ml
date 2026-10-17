@@ -1,0 +1,23 @@
+version: 2
+updates:
+- package-ecosystem: pip
+  directory: "/"
+  schedule:
+    interval: weekly
+  open-pull-requests-limit: 10
+  # torch is pinned in three places (requirements.txt, Dockerfile, ci.yml) and
+  # Dependabot only updates requirements.txt, so upgrade it by hand.
+  ignore:
+    - dependency-name: "torch"
+  # One weekly PR for all minor/patch updates; majors still get their own PR.
+  groups:
+    minor-and-patch:
+      update-types: [ "minor", "patch" ]
+- package-ecosystem: github-actions
+  directory: "/"
+  schedule:
+    interval: weekly
+  open-pull-requests-limit: 10
+  groups:
+    minor-and-patch:
+      update-types: [ "minor", "patch" ]
