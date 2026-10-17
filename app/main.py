@@ -18,6 +18,7 @@ class AnalyzeResponse(BaseModel):
     tags: list[str]
     embedding: list[float]
 
+
 class Tagger(Protocol):
     """Anything with a predict method like ClipTagger's (tests use a fake)."""
 
@@ -55,7 +56,7 @@ async def analyze(file: UploadFile) -> AnalyzeResponse:
             # Running the model is slow CPU work; do it in a thread so other requests aren't blocked.
             tags, embedding = await run_in_threadpool(models["tagger"].predict, data)
     except UnidentifiedImageError:
-        raise HTTPException(status_code=400, detail="File is not a valid image")
+        raise HTTPException(status_code=400, detail="File is not a valid image") from None
     return AnalyzeResponse(
         filename=file.filename,
         content_type=file.content_type,
