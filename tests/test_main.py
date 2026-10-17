@@ -12,9 +12,9 @@ client = TestClient(app)
 class FakeTagger:
     """Stands in for ClipTagger so tests don't download or run the real model."""
 
-    def predict(self, data):
+    def predict(self, data: bytes) -> tuple[list[str], list[float]]:
         Image.open(io.BytesIO(data))  # raises for non-images, like the real tagger
-        return ["dog", "beach"]
+        return ["dog", "beach"], [0.1, 0.2, 0.3]
 
 
 @pytest.fixture(autouse=True)
@@ -50,6 +50,7 @@ def test_analyze_returns_tags():
         "content_type": "image/png",
         "bytes": len(image),
         "tags": ["dog", "beach"],
+        "embedding": [0.1, 0.2, 0.3],
     }
 
 

@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from typing import Protocol
 
 from fastapi import FastAPI, HTTPException, UploadFile
 from PIL import UnidentifiedImageError
@@ -13,8 +14,15 @@ class AnalyzeResponse(BaseModel):
     content_type: str | None
     bytes: int
     tags: list[str]
+    embedding: list[float]
 
-models: dict[str, ClipTagger] = {}
+class Tagger(Protocol):
+    """Anything with a predict method like ClipTagger's (tests use a fake)."""
+
+    def predict(self, data: bytes) -> tuple[list[str], list[float]]: ...
+
+
+models: dict[str, Tagger] = {}
 
 
 @asynccontextmanager
@@ -38,12 +46,13 @@ async def analyze(file: UploadFile) -> AnalyzeResponse:
     data = await file.read()
     try:
         # Running the model is slow CPU work; do it in a thread so other requests aren't blocked.
-        tags = await run_in_threadpool(models["tagger"].predict, data)
+        tags, embedding = await run_in_threadpool(models["tagger"].predict, data)
     except UnidentifiedImageError:
         raise HTTPException(status_code=400, detail="File is not a valid image")
     return AnalyzeResponse(
         filename=file.filename,
         content_type=file.content_type,
         bytes=len(data),
-        tags=tags
+        tags=tags,
+        embedding=embedding,
     )

@@ -47,7 +47,7 @@ class ClipTagger:
         return normalize(self.model.text_projection(pooled), dim=-1)
 
     @torch.inference_mode()
-    def predict(self, data: bytes) -> list[str]:
+    def predict(self, data: bytes) -> tuple[list[str], list[float]]:
         image = Image.open(io.BytesIO(data)).convert("RGB")
         inputs = self.processor.image_processor(image, return_tensors="pt")
         pooled = self.model.vision_model(**inputs).pooler_output
@@ -58,9 +58,12 @@ class ClipTagger:
         scores = logits.softmax(dim=-1)[0]
 
         best = scores.topk(min(self.top_k, len(self.labels)))
-        return [
+        tags = [
             self.labels[int(i)]
             for score, i in zip(best.values, best.indices)
             if float(score) >= self.min_score
         ]
+        # The photo's 512-number CLIP vector, for similarity search.
+        embedding = [float(x) for x in image_features[0]]
+        return tags, embedding
 
