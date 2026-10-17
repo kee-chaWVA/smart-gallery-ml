@@ -1,3 +1,5 @@
+import asyncio
+import os
 from contextlib import asynccontextmanager
 from typing import Protocol
 
@@ -24,6 +26,10 @@ class Tagger(Protocol):
 
 models: dict[str, Tagger] = {}
 
+# torch already spreads one prediction across every CPU core, so running many at once
+# only makes them compete. Extra requests wait here for a free slot.
+inference_slots = asyncio.Semaphore(int(os.environ.get("INFERENCE_CONCURRENCY", "1")))
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -45,8 +51,9 @@ def health():
 async def analyze(file: UploadFile) -> AnalyzeResponse:
     data = await file.read()
     try:
-        # Running the model is slow CPU work; do it in a thread so other requests aren't blocked.
-        tags, embedding = await run_in_threadpool(models["tagger"].predict, data)
+        async with inference_slots:
+            # Running the model is slow CPU work; do it in a thread so other requests aren't blocked.
+            tags, embedding = await run_in_threadpool(models["tagger"].predict, data)
     except UnidentifiedImageError:
         raise HTTPException(status_code=400, detail="File is not a valid image")
     return AnalyzeResponse(
