@@ -10,13 +10,44 @@ DEFAULT_MODEL = "openai/clip-vit-base-patch32"
 
 # Candidate tags. CLIP scores every photo against each of these.
 LABELS = [
-    "person", "group of people", "baby", "dog", "cat", "bird", "horse",
-    "car", "bicycle", "boat", "airplane", "train",
-    "beach", "mountain", "forest", "lake", "snow", "desert", "city", "street",
-    "building", "house", "garden", "park", "sunset", "night sky",
-    "food", "drink", "cake", "flowers",
-    "concert", "sports", "wedding", "party", "birthday",
-    "selfie", "document", "screenshot",
+    "person",
+    "group of people",
+    "baby",
+    "dog",
+    "cat",
+    "bird",
+    "horse",
+    "car",
+    "bicycle",
+    "boat",
+    "airplane",
+    "train",
+    "beach",
+    "mountain",
+    "forest",
+    "lake",
+    "snow",
+    "desert",
+    "city",
+    "street",
+    "building",
+    "house",
+    "garden",
+    "park",
+    "sunset",
+    "night sky",
+    "food",
+    "drink",
+    "cake",
+    "flowers",
+    "concert",
+    "sports",
+    "wedding",
+    "party",
+    "birthday",
+    "selfie",
+    "document",
+    "screenshot",
 ]
 
 
@@ -60,10 +91,9 @@ class ClipTagger:
         best = scores.topk(min(self.top_k, len(self.labels)))
         tags = [
             self.labels[int(i)]
-            for score, i in zip(best.values, best.indices)
+            for score, i in zip(best.values, best.indices, strict=True)
             if float(score) >= self.min_score
         ]
         # The photo's 512-number CLIP vector, for similarity search.
         embedding = [float(x) for x in image_features[0]]
         return tags, embedding
-
